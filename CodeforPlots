@@ -1,0 +1,117 @@
+# Excellent R Code!
+
+
+# anova, hsd, plotted on a boxplot!
+library(multcomp)
+library(rstatix)
+library(dplyr)
+
+dataframe %>% 
+  group_by(Cultivar, Treatment) %>%
+  identify_outliers(Harvest.Yield) %>% as.data.frame()
+	# check if there's extreme outliers that we should consider removing
+
+
+model <- aov(outcome~factor1*factor2 + randomvariable, data=dataframe)
+summary(model) #
+
+
+shapiro_test(residuals(model)) # are residuals normal? if not, anova may not be appropriate
+dataframe %>%
+  group_by(factor1) %>%
+  shapiro_test(outcome)  
+dataframe %>% levene_test(outcome ~ factor1*factor2) # if sig diffs in variance, might need welch_anova
+
+
+TukeyHSD(model, conf.level=.95)
+plot(TukeyHSD(model, conf.level=.95), las = 2)
+test <- emmeans(object = model, pairwise ~ "factor1*factor2", adjust = "tukey")
+mod_means <- multcomp::cld(object = test$emmeans,
+              Letters = letters)
+
+pwc <- dataframe %>% tukey_hsd(Yield ~ factor1 * factor2 + randomvariable)
+pwc %>% filter(p.adj < 0.05) %>% as.data.frame()
+
+
+
+ggplot(data = mod_means,
+       aes(x = Cultivar, y = emmean, col = Treatment)) +
+  geom_jitter(aes(x = Cultivar, y = Harvest.Yield), alpha = 0.7, size = 2, position = position_jitterdodge(jitter.height = 0, jitter.width = 0.17), data = butterhead) +
+  geom_boxplot(aes(x = Cultivar, y = Harvest.Yield, fill = Treatment), alpha = 0.5, outlier.shape = NA, data = butterhead) +
+  geom_text(aes(y = emmean + 4, label = gsub(" ", "", .group)),
+            position = position_dodge(width = 0.8)) +
+  labs(x = "", y = bquote("Harvest Yield "~(lbs/ft^2/y))) +
+  scale_fill_manual(values=c("lightblue", "brown2")) +
+  scale_color_manual(values=c("lightblue", "brown2")) + theme_bw()
+
+
+# reaction plot (with labels and st dev)
+
+
+
+# text search for "issues" and quantify frequency. t test + wordclouds!
+
+
+
+
+# stacked area plot of color % (first calculate total and % of total made up by each color of pixel)
+percPheno <- phenodf %>% 
+  mutate(TotalPixels = rowSums(.[30:48]),
+         black = BLACK/TotalPixels,
+         grey = GREY/TotalPixels,
+         white = WHITE/TotalPixels,
+         red = RED/TotalPixels,
+         dark_red = DARK_RED/TotalPixels,
+         orange = ORANGE/TotalPixels,
+         brown = BROWN/TotalPixels,
+         light_yellow = LIGHT_YELLOW/TotalPixels,
+         dark_yellow = DARK_YELLOW/TotalPixels,
+         light_yellow_green = LIGHT_YELLOW_GREEN/TotalPixels,
+         dark_yellow_green = DARK_YELLOW_GREEN/TotalPixels,
+         light_green = LIGHT_GREEN/TotalPixels,
+         dark_green = DARK_GREEN/TotalPixels,
+         cyan = CYAN/TotalPixels,
+         dark_cyan = DARK_CYAN/TotalPixels,
+         light_blue = LIGHT_BLUE/TotalPixels,
+         dark_blue = DARK_BLUE/TotalPixels,
+         magenta = MAGENTA/TotalPixels,
+         dark_magenta = DARK_MAGENTA/TotalPixels) %>% 
+  group_by(Component, Treatment) %>%
+  summarize(black = mean(black),
+            grey = mean(grey),
+            white = mean(white),
+            red = mean(red),
+            dark_red = mean(dark_red),
+            orange = mean(orange),
+            brown = mean(brown),
+            light_yellow = mean(light_yellow),
+            dark_yellow = mean(dark_yellow),
+            light_yellow_green = mean(light_yellow_green),
+            dark_yellow_green = mean(dark_yellow_green),
+            light_green = mean(light_green),
+            dark_green = mean(dark_green),
+            cyan = mean(cyan),
+            dark_cyan = mean(dark_cyan),
+            light_blue = mean(light_blue),
+            dark_blue = mean(dark_blue),
+            magenta = mean(magenta),
+            dark_magenta = mean(dark_magenta))
+
+percPheno %>% filter(Component == "Butterhead" & Treatment %in% c("26:60:1200", "28:80:850")) %>% 
+  group_by(Component, Treatment) %>%
+  pivot_longer(cols = 3:21, names_to = "color", values_to = "perc") %>%
+  mutate(color = factor(color, levels=c("black", "grey", "white", "dark_yellow", 
+                                        "light_yellow", "dark_yellow_green", "light_yellow_green", 
+                                        "light_green", "dark_green", "dark_cyan", 
+                                        "cyan","light_blue","dark_blue","dark_magenta",   "magenta",  
+                                        "red","dark_red", "orange", "brown"))) %>%
+  ggplot(aes(x = Treatment, y = perc, fill = color)) +
+  geom_bar(position = "fill",stat = "identity") + labs(y = "Average Proportion of Leaf Colors") +
+  scale_fill_manual(values = c("black","grey","white", "goldenrod", "yellow","#99CC00", "#CCFF99","green2",
+                               "darkgreen","darkcyan", "cyan",  "lightblue","darkblue", "darkmagenta","magenta",
+                               "red","darkred", "brown", "orange" ), drop = T, limits = force)
+
+
+
+# shelf life/cox regression!
+
