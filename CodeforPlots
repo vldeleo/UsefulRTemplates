@@ -114,4 +114,11 @@ percPheno %>% filter(Component == "Butterhead" & Treatment %in% c("26:60:1200", 
 
 
 # shelf life/cox regression!
+library(survival)
+library(survminer)
 
+#code data so that you have day of census, day of failure, and failure or not.
+res.cox <- coxph(Surv(time, status) ~ sex, data = lung)
+
+ggsurvplot(survfit(res.cox), color = "red",
+           ggtheme = theme_bw())
